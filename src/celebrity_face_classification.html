@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celebrity Face Classifier</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(91, 37, 178, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 56, 196, 0.1) 0%, transparent 40%);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Header styles */
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+        
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(to right, #ffd1ee, #c4a8ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255, 86, 193, 0.4);
+            letter-spacing: -1px;
+        }
+        
+        header p {
+            color: #ffffff;
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        /* Celebrity gallery */
+        .celebrity-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2.5rem;
+            margin-bottom: 5rem;
+            position: relative;
+        }
+        
+        .celebrity-gallery::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(155, 109, 255, 0.5), transparent);
+            bottom: -2.5rem;
+        }
+        
+        .celebrity-gallery > * {
+            flex: 1 0 100px; 
+            max-width: 150px;
+        }
+        
+        .celebrity-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .celebrity-item:hover {
+            transform: translateY(-8px);
+        }
+        
+        .celebrity-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            background-color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.3),
+                0 0 0 2px rgba(155, 109, 255, 0.3);
+        }
+        
+        .celebrity-avatar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            box-shadow: inset 0 0 10px rgba(155, 109, 255, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .celebrity-item:hover .celebrity-avatar::after {
+            opacity: 1;
+        }
+        
+        .celebrity-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .celebrity-item:hover .celebrity-avatar img {
+            transform: scale(1.1);
+        }
+        
+        .celebrity-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+            color: #ffffff;
+        }
+        
+        .celebrity-category {
+            font-size: 0.8rem;
+            color: #9b6dff;
+            font-weight: 500;
+        }
+        
+        /* Main content area */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3rem;
+        }
+        
+        @media (min-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        /* Upload area */
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dropzone {
+            border: 2px dashed rgba(155, 109, 255, 0.4);
+            border-radius: 1rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 320px;
+            background-color: rgba(26, 26, 46, 0.6);
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dropzone.active {
+            border-color: #ff56c1;
+            background-color: rgba(255, 86, 193, 0.1);
+        }
+        
+        .dropzone.has-image {
+            padding: 0;
+        }
+        
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1.5rem;
+            color: #9b6dff;
+            filter: drop-shadow(0 0 8px rgba(155, 109, 255, 0.5));
+        }
+        
+        .dropzone-text {
+            text-align: center;
+            color: #a0a0b0;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .browse-button {
+            background: linear-gradient(135deg, #9b6dff, #ff56c1);
+            border: none;
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(155, 109, 255, 0.4);
+        }
+        
+        .browse-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(155, 109, 255, 0.6);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 1rem;
+        }
+        
+        .remove-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+            transition: all 0.2s ease;
+        }
+        
+        .remove-button:hover {
+            background: #ef4444;
+            transform: scale(1.1);
+        }
+        
+        .classify-button {
+            margin-top: 1.5rem;
+            background: linear-gradient(135deg, #9b6dff, #ff56c1);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(155, 109, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .classify-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .classify-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(155, 109, 255, 0.6);
+        }
+        
+        .classify-button:hover::before {
+            left: 100%;
+        }
+        
+        .classify-button:disabled {
+            background: #2a2a3a;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            border-left: 4px solid #ef4444;
+        }
+        
+        /* Results area */
+        .results-area {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            color: #ffffff;
+        }
+        
+        .results-title svg {
+            margin-right: 0.8rem;
+            color: #ff56c1;
+            filter: drop-shadow(0 0 5px rgba(255, 86, 193, 0.5));
+        }
+        
+        .results-card {
+            background-color: rgba(26, 26, 46, 0.8);
+            border-radius: 1rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            height: 100%;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(155, 109, 255, 0.2);
+        }
+        
+        .empty-results {
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0a0b0;
+            text-align: center;
+            background-color: rgba(26, 26, 46, 0.6);
+            border-radius: 1rem;
+            border: 1px solid rgba(155, 109, 255, 0.2);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .top-match {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(155, 109, 255, 0.2);
+        }
+        
+        .top-match-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-right: 1.5rem;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.3),
+                0 0 0 2px rgba(255, 86, 193, 0.3);
+        }
+        
+        .top-match-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .top-match-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            background: linear-gradient(to right, #ff56c1, #9b6dff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .top-match-label {
+            font-size: 0.95rem;
+            color: #a0a0b0;
+            font-weight: 500;
+        }
+        
+        .probability-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .probability-item {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .probability-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #ffffff;
+        }
+        
+        .probability-bar {
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(to right, #9b6dff, #ff56c1);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .probability-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .probability-value {
+            font-size: 0.95rem;
+            text-align: right;
+            font-weight: 600;
+            color: #ff56c1;
+        }
+        
+        .corner-credit {
+            text-align: right;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-family: sans-serif;
+            color: #888;
+            opacity: 0.8;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 1.2rem;
+            height: 1.2rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #ff56c1;
+            border-left-color: #9b6dff;
+            animation: spin 1s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+            margin-right: 0.8rem;
+            box-shadow: 0 0 10px rgba(155, 109, 255, 0.5);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Additional animations and effects */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(155, 109, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(155, 109, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(155, 109, 255, 0); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .celebrity-gallery {
+                gap: 1.5rem;
+            }
+            
+            .celebrity-avatar {
+                width: 90px;
+                height: 90px;
+            }
+        }
+    </style>
+    
+    <!-- Update the SVG icons to match the new style -->
+    <script>
+        // After the page loads, update the SVG icons to match the new style
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update the upload icon
+            const uploadIcon = document.getElementById('uploadIcon');
+            if (uploadIcon) {
+                uploadIcon.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                `;
+            }
+            
+            // Update the results title icon
+            const resultsTitleIcon = document.querySelector('.results-title svg');
+            if (resultsTitleIcon) {
+                resultsTitleIcon.outerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="7"></circle>
+                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                    </svg>
+                `;
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="corner-credit">
+                Created by Ladya Kalascha.
+            </div>
+            <h1>Celebrity Face Classifier</h1>
+            <p>Snap a pic or upload one, and let our AI reveal which celebrity you look like the most – your star twin awaits!. This Project </p>
+        </header>
+        <div class="celebrity-gallery" id="celebrityGallery">
+            <!-- Celebrity items will be added here dynamically -->
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-area">
+                <div class="dropzone" id="dropzone">
+                    <svg class="upload-icon" id="uploadIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p class="dropzone-text" id="dropzoneText">Drag and drop your image here or click to browse</p>
+                    <button class="browse-button" id="browseButton">Select Image</button>
+                    <input type="file" class="file-input" id="fileInput" accept="image/*">
+                </div>
+                
+                <button class="classify-button" id="classifyButton" disabled>Classify Image</button>
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+            </div>
+            
+            <div class="results-area">
+                <h2 class="results-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="7"></circle>
+                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                    </svg>
+                    Classification Results
+                </h2>
+                
+                <div class="empty-results" id="emptyResults">
+                    <p>Upload and classify an image to see results</p>
+                </div>
+                
+                <div class="results-card" id="resultsCard" style="display: none;">
+                    <div class="top-match" id="topMatch">
+                        <!-- Top match content will be added here -->
+                    </div>
+                    
+                    <div class="probability-list" id="probabilityList">
+                        <!-- Probability items will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const celebrities = [
+        { id: 1, name: "Angelina Jolie", image: "/images/angelina.jpeg" },
+        { id: 2, name: "Jennifer Lawrence", image: "/images/jennifer.jpeg" },
+        { id: 3, name: "Johnny Deep", image: "/images/johnny.jpeg" },
+        { id: 4, name: "Megan Fox", image: "/images/254F2CD1-2F98-4D56-9D18-5C8FAAA1F0A8_1_201_a.jpeg" },
+        { id: 5, name: "Nicole Kidman", image: "/images/nicole.jpeg" },
+        { id: 6, name: "Robert Downey Jr", image: "/images/robert.jpeg" },
+        { id: 7, name: "Scarlett Johansson", image: "/images/Scarlett.jpeg" },
+        { id: 8, name: "Tom Cruise", image: "/images/tom.jpeg" },
+        { id: 9, name: "Tom Hanks", image: "/images/hanks.jpeg" },
+        { id: 10, name: "Will Smith", image: "/images/lupoa.jpeg" }
+    ];
+        // DOM elements
+        const dropzone = document.getElementById('dropzone');
+        const uploadIcon = document.getElementById('uploadIcon');
+        const dropzoneText = document.getElementById('dropzoneText');
+        const browseButton = document.getElementById('browseButton');
+        const fileInput = document.getElementById('fileInput');
+        const classifyButton = document.getElementById('classifyButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const emptyResults = document.getElementById('emptyResults');
+        const resultsCard = document.getElementById('resultsCard');
+        const topMatch = document.getElementById('topMatch');
+        const probabilityList = document.getElementById('probabilityList');
+        const celebrityGallery = document.getElementById('celebrityGallery');
+        
+        // Variables
+        let selectedFile = null;
+        let imagePreview = null;
+        let removeButton = null;
+        let isClassifying = false;
+        
+        // Initialize
+        function init() {
+            renderCelebrityGallery();
+            setupEventListeners();
+        }
+        
+        // Render celebrity gallery
+        function renderCelebrityGallery() {
+            celebrityGallery.innerHTML = '';
+            
+            celebrities.forEach(celebrity => {
+                const celebrityItem = document.createElement('div');
+                celebrityItem.className = 'celebrity-item';
+                
+                // Generate image path based on celebrity ID
+                const imagePath = `/images/${celebrity.id}.jpg`;
+                
+                celebrityItem.innerHTML = `
+                <div class="celebrity-avatar">
+                    <img src="/images/${celebrity.id}.jpg" alt="${celebrity.name}">
+                </div>
+                <div class="celebrity-name">${celebrity.name}</div>
+            `;
+                            
+                celebrityGallery.appendChild(celebrityItem);
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // File input change
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // Browse button click
+            browseButton.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Dropzone click
+            dropzone.addEventListener('click', (e) => {
+                if (e.target === dropzone || e.target === uploadIcon || e.target === dropzoneText) {
+                    fileInput.click();
+                }
+            });
+            
+            // Drag and drop events
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('active');
+            });
+            
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('active');
+            });
+            
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('active');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Classify button click
+            classifyButton.addEventListener('click', classifyImage);
+        }
+        
+        // Handle file selection
+        function handleFileSelect(e) {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        }
+        
+        // Handle file
+        function handleFile(file) {
+            // Check if file is an image
+            if (!file.type.match('image.*')) {
+                showError('Please select an image file');
+                return;
+            }
+            
+            selectedFile = file;
+            showError(null);
+            
+            // Create file reader to display preview
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                // Clear previous preview
+                if (imagePreview) {
+                    dropzone.removeChild(imagePreview);
+                }
+                
+                if (removeButton) {
+                    dropzone.removeChild(removeButton);
+                }
+                
+                // Create new preview
+                dropzone.classList.add('has-image');
+                uploadIcon.style.display = 'none';
+                dropzoneText.style.display = 'none';
+                browseButton.style.display = 'none';
+                
+                // Create image preview
+                imagePreview = document.createElement('img');
+                imagePreview.className = 'image-preview';
+                imagePreview.src = e.target.result;
+                dropzone.appendChild(imagePreview);
+                
+                // Create remove button
+                removeButton = document.createElement('button');
+                removeButton.className = 'remove-button';
+                removeButton.innerHTML = '×';
+                removeButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFile();
+                });
+                dropzone.appendChild(removeButton);
+                
+                // Enable classify button
+                classifyButton.disabled = false;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // Remove file
+        function removeFile() {
+            selectedFile = null;
+            
+            // Reset dropzone
+            dropzone.classList.remove('has-image');
+            uploadIcon.style.display = 'block';
+            dropzoneText.style.display = 'block';
+            browseButton.style.display = 'block';
+            
+            if (imagePreview) {
+                dropzone.removeChild(imagePreview);
+                imagePreview = null;
+            }
+            
+            if (removeButton) {
+                dropzone.removeChild(removeButton);
+                removeButton = null;
+            }
+            
+            // Reset file input
+            fileInput.value = '';
+            
+            // Disable classify button
+            classifyButton.disabled = true;
+            
+            // Hide results
+            emptyResults.style.display = 'flex';
+            resultsCard.style.display = 'none';
+        }
+        
+        // Show error message
+        function showError(message) {
+            if (message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            } else {
+                errorMessage.style.display = 'none';
+            }
+        }
+        
+        // Classify image
+        function classifyImage() {
+            if (!selectedFile || isClassifying) {
+                return;
+            }
+            
+            isClassifying = true;
+            showError(null);
+            
+            // Update button text
+            const originalButtonText = classifyButton.textContent;
+            classifyButton.innerHTML = '<span class="spinner"></span> Classifying...';
+            classifyButton.disabled = true;
+            
+            // Create FormData
+            const formData = new FormData();
+            
+            // Get base64 image data
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                formData.append('image_data', reader.result);
+                
+                // Send to server
+                fetch('/Classify_image', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Classification failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayResults(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Error classifying image. Please try again.');
+                })
+                .finally(() => {
+                    // Reset button
+                    classifyButton.innerHTML = originalButtonText;
+                    classifyButton.disabled = false;
+                    isClassifying = false;
+                });
+            };
+            reader.readAsDataURL(selectedFile);
+        }
+        
+        // Display results
+        function displayResults(results) {
+            if (!results || results.length === 0) {
+                showError('No faces with two eyes detected in the image.');
+                return;
+            }
+            
+            // Hide empty results and show results card
+            emptyResults.style.display = 'none';
+            resultsCard.style.display = 'block';
+            
+            const result = results[0];
+            const topClassName = result.class;
+            const probabilities = result.class_probability;
+            const classDictionary = result.class_dictionary;
+            
+            // Display top match
+            topMatch.innerHTML = `
+                <div class="top-match-image">
+                    <img src="${imagePreview.src}" alt="Classified image">
+                </div>
+                <div>
+                    <div class="top-match-name">${topClassName}</div>
+                    <div class="top-match-label">Top match</div>
+                </div>
+            `;
+            
+            // Display probability list
+            probabilityList.innerHTML = '';
+            
+            // Convert class dictionary to array and sort by probability
+            const classItems = Object.entries(classDictionary).map(([name, index]) => {
+                return {
+                    name,
+                    index,
+                    probability: probabilities[index]
+                };
+            }).sort((a, b) => b.probability - a.probability);
+            
+            // Create probability items
+            classItems.forEach(item => {
+                const probabilityItem = document.createElement('div');
+                probabilityItem.className = 'probability-item';
+                
+                probabilityItem.innerHTML = `
+                    <div class="probability-name">${item.name}</div>
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: ${item.probability}%"></div>
+                    </div>
+                    <div class="probability-value">${item.probability}%</div>
+                `;
+                
+                probabilityList.appendChild(probabilityItem);
+            });
+        }
+        
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
