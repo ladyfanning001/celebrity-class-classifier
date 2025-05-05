@@ -1,3 +1,7 @@
+Flask
+gunicorn
+opencv-python
+numpy
 annotated-types==0.7.0
 anyio==4.9.0
 appnope==0.1.4
